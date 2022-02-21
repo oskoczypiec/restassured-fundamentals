@@ -4,6 +4,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
 import org.hamcrest.number.OrderingComparison;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.time.LocalDate;
@@ -11,8 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.*;
 
 public class ValidatableResponse {
     public static final String BASE_URL = "https://api.github.com/";
@@ -61,5 +61,40 @@ public class ValidatableResponse {
                         "access-control-allow-origin", "*",
                         "content-security-policy", "default-src 'none'")
                 .headers(expectedHeaders);
+    }
+
+    @Test
+    public void matcherExample(){
+
+        RestAssured.get(BASE_URL)
+                .then()
+                .body("current_user_url", equalTo(BASE_URL + "user"))
+                .body(containsString("feeds_url"))
+                //can contain more than one matcher
+                .body(containsString("feeds_url"), containsString("current_user_url"));
+    }
+
+    @Test
+    public void complexBodyExample(){
+        RestAssured.get(BASE_URL + "users/andrejs-ps")
+                .then()
+                .body("url", response -> Matchers.containsString(response.body().jsonPath().get("login")));
+    }
+
+    //example with multiple data
+    //define multiple data
+    @DataProvider
+    public Object[][] names(){
+        return new Object[][]{
+                {"andrejs-ps"},
+                {"rest-assured"}
+        };
+    }
+    //use in the test
+    @Test(dataProvider = "names")
+    public void complesBodyExamplWithDp(String name){
+        RestAssured.get(BASE_URL + "users/" + name)
+                .then()
+                .body("url", response -> Matchers.containsString(response.body().jsonPath().get("login")));
     }
 }
